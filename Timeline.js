@@ -42,6 +42,10 @@ function Timeline(){
 	// add canvas
 	this._id = Timeline._id++; // get id, create next id for next instance
 	this._timeline_wrapper_id = timeline_wrapper_id;
+	$('#' + timeline_wrapper_id).css('position', 'relative'); 
+	// Thanks to css-tricks.com/absolute-positioning-inside-relative-positioning
+
+
 	this._canvas = document.createElement('canvas');
 	this._canvas.setAttribute('id', 'canvas' + this._id);
 	$('#' + timeline_wrapper_id).append(this._canvas);
@@ -55,11 +59,18 @@ function Timeline(){
 	this._back.onclick = this._backHandler; // set event handler: onclick
 	$('#' + timeline_wrapper_id).append(this._back);
 
+	
+	// add forward button
+	this._forward = document.createElement('div');
+	this._forward.setAttribute('id', 'forward' + this._id);
+	this._forward.onclick = this._forwardHandler;
+	$('#' + timeline_wrapper_id).append(this._forward);
+	
 
-	this._resizeHandler = function(){
+	this._resizeHandler = function(self){
 	    // First, we clear all style so as to prevent duplicates
-	    $('#canvas' + this._id).removeAttr('style');
-	    $('#back' + this._id).removeAttr('style');
+	    $('#canvas' + self._id).removeAttr('style');
+	    $('#back' + self._id).removeAttr('style');
 	    // later we'll insert an empty style before modifying the style.
 	    
 	    
@@ -81,10 +92,10 @@ function Timeline(){
 	       In this case, we want to draw everything on top of the canvas,
 	       hence the lowest z-index in our application: 0.
 	    */
-	    $('#canvas'+this._id).attr('style', ''); 
+	    $('#canvas'+self._id).attr('style', ''); 
 	    // this undoes our removeAttr('style') from earlier
 
-	    $('#canvas' + this._id).css({
+	    $('#canvas' + self._id).css({
 		width: canvas_width,
 		height: canvas_height,
 		border: '1px solid', // to see what's going on
@@ -98,28 +109,50 @@ function Timeline(){
 	       Where possible, we calculate them in terms of canvas attributes,
 	       to achieve a consistent layout as the browser is resized.
 	    */
-	    var back_left = $('#canvas' + this._id).css('left') + 'px'; 
+	    var back_left = $('#canvas' + self._id).css('left') + 'px'; 
 	    // same distance from left timeline_wrapper as canvas
 	    
 	    // This one is a little more difficult: An explanation will follow
 	    // as soon as I've figured it out myself.
-	    var back_top = ((-1)*$('#canvas' + this._id).height() - 6) + 'px';
+	    var back_top = ((-1)*$('#canvas' + self._id).height() - 6) + 'px';
 	    
-	    $('#back' + this._id).attr('style', ''); 
-	    $('#back' + this._id).css({
+	    $('#back' + self._id).attr('style', ''); 
+	    $('#back' + self._id).css({
 		'background-color': '#336699',
 		width: Timeline._BUTTON_WIDTH,
-		height: $('#canvas' + this._id).height(), // fill canvas height
+		height: $('#canvas' + self._id).height(), // fill canvas height
 		position: 'relative', // same reason as for canvas
 		left: back_left,
 		top: back_top,
 		'z-index': 1
 	    });
+
+	    // Now, let's define the forward code.
+	    // forward_left is defined by the space to the left of canvas,
+	    // plus the width of the canvas, minus the width of the button.
+	    var forward_left = ($('#canvas' + self._id).css('left') + 
+				$('#canvas').width() - 
+				Timeline._BUTTON_WIDTH) + 'px';
+	    var forward_top = back_top;
+	    
+	    $('#forward' + self._id).attr('style' ,'');
+	    $('#forward' + self._id).css({
+		'background-color': '#336699',
+		width: Timeline._BUTTON_WIDTH,
+		height: $('#canvas' + self._id).height(),
+		position: 'relative',
+		left: forward_left,
+		top: forward_top,
+		'z-index': 1
+	    });
 	};
 	
 	
-	this._resizeHandler();
-	$(window).resize(this._resizeHandler);
+	this._resizeHandler(this);
+	var thisTimeline = this;
+	$(window).resize(function(){
+	    thisTimeline._resizeHandler(thisTimeline);
+	});
     };
 
     /*
