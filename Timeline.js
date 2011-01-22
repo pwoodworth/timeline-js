@@ -96,7 +96,6 @@ function Timeline(){
 	$('#canvas' + this._id).css({
 	    width: canvas_width,
 	    height: canvas_height,
-	    'margin-top': '0px',
 	    border: '1px solid', // to see what's going on
 	    position: 'relative', // "take canvas out of flow" - rough quote
 	    top: Timeline._BORDER_TOP, // seems to be the chrome default
@@ -118,7 +117,6 @@ function Timeline(){
 	this._back.setAttribute('style', ''); 
 	$('#back' + this._id).css({
 	    'background-color': '#336699',
-	    'margin-top': '0px',
 	    width: Timeline._BUTTON_WIDTH,
 	    height: $('#canvas' + this._id).height(), // fill canvas height
 	    position: 'relative', // same reason as for canvas
