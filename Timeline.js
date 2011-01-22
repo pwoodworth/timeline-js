@@ -24,7 +24,6 @@ function Timeline(){
     Timeline._OFFSET_TOP = '8px'; // top border, 8px seems to be chrome default
     Timeline._BUTTON_WIDTH = 17; // The length of the back and forward buttons
     Timeline._WIDTH_FACTOR = 2/3; // How much height timeline should take up
-    Timeline._CANVAS_BORDER_THICKNESS = '1px'
     // variables
     Timeline._id = 0; // An id wich is unique for each instance of Timeline
 
