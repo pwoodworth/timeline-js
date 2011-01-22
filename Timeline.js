@@ -19,12 +19,21 @@ function Timeline(){
     Timeline._OFFSET_TOP = '8px'; // top border, 8px seems to be chrome default
     Timeline._BUTTON_WIDTH = 17; // The length of the back and forward buttons
     Timeline._WIDTH_FACTOR = 2/3; // How much height timeline should take up
+    Timeline._MAGIC_DISTANCE = '6px'; // I don't know why this number works for
+    // all sizes, but it does. Maybe it has something to do with the margin
+    // of eight
+
     // variables
     Timeline._id = 0; // An id wich is unique for each instance of Timeline
+    
 
     /* This function is called when the user clicks the back div*/
     this._backHandler = function(){
 	alert('back clicked');
+    };
+
+    this._forwardHandler = function(){
+	alert('forward clicked');
     };
 
     this._testResize = function(){
@@ -78,7 +87,7 @@ function Timeline(){
 	    
 	    // Width of canvas is window width, with space for borders either 
 	    // side.
-	    var canvas_width = $(window).width() - Timeline._BORDER_SIDES*2;
+	    var canvas_width = $(window).width() - Timeline._BORDER_SIDES;
 	    var canvas_height = $(window).height() * Timeline._HEIGHT_FACTOR;
 	    
 	    
@@ -121,9 +130,9 @@ function Timeline(){
 		'background-color': '#336699',
 		width: Timeline._BUTTON_WIDTH,
 		height: $('#canvas' + self._id).height(), // fill canvas height
-		position: 'relative', // same reason as for canvas
-		left: back_left,
-		top: back_top,
+		position: 'absolute', // same reason as for canvas
+		bottom: Timeline._MAGIC_DISTANCE,
+		left: '0px',
 		'z-index': 1
 	    });
 
@@ -140,9 +149,9 @@ function Timeline(){
 		'background-color': '#336699',
 		width: Timeline._BUTTON_WIDTH,
 		height: $('#canvas' + self._id).height(),
-		position: 'relative',
-		left: forward_left,
-		top: forward_top,
+		position: 'absolute',
+		bottom: Timeline._MAGIC_DISTANCE,
+		right: '2px',
 		'z-index': 1
 	    });
 	};
