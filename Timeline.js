@@ -22,6 +22,7 @@ function Timeline(){
     Timeline._MAGIC_DISTANCE = '6px'; // I don't know why this number works for
     // all sizes, but it does. Maybe it has something to do with the margin
     // of eight
+    Timeline._BODY_MARGINS = 8;
 
     // variables
     Timeline._id = 0; // An id wich is unique for each instance of Timeline
@@ -45,9 +46,10 @@ function Timeline(){
       timeline.setup()
       Create canvas, back and forward button, as well as slider for scale.
       timeline_wrapper_id is the id of an element which is to contain this
-      specific timeline.
-     */    
+      specific timeline. 
+     */
     this.setup = function(timeline_wrapper_id){
+
 	// add canvas
 	this._id = Timeline._id++; // get id, create next id for next instance
 	this._timeline_wrapper_id = timeline_wrapper_id;
@@ -58,6 +60,9 @@ function Timeline(){
 	this._canvas = document.createElement('canvas');
 	this._canvas.setAttribute('id', 'canvas' + this._id);
 	$('#' + timeline_wrapper_id).append(this._canvas);
+
+	this._context = this._canvas.getContext('2d'); // we'll use the context
+	// to draw on the canvas in the draw() function.
 
 	// add back button
 	this._back = document.createElement('div');
@@ -75,7 +80,24 @@ function Timeline(){
 	this._forward.onclick = this._forwardHandler;
 	$('#' + timeline_wrapper_id).append(this._forward);
 	
+	
+	// Add a settings panel
+/*
+	this._settings = document.createElement('div');
+	this._settings.setAttribute('id', 'settings' + this._id);
+	this._settings.innerText = 'Settings\n';
+*/
+	$('#' + timeline_wrapper_id).append($('<div id="settings' + this._id + '"><center>Timeline Settings <a id="showhideSettings" href="javascript:showHideSettings()">-</a></center></div>'));
+	// Add some settings to the settings panel
+	// If stop_moving is set, the timeline should stop scrolling
+	$('#settings' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
+	// label the checkbox
+	$('#settings' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label>'));
 
+	/* The _resizeHandler is called to fit the Timeline on the screen.
+	   It sets the canvas dimensions, as well as those of the back and 
+	   forward buttons.
+	 */
 	this._resizeHandler = function(self){
 	    // First, we clear all style so as to prevent duplicates
 	    $('#canvas' + self._id).removeAttr('style');
@@ -154,6 +176,18 @@ function Timeline(){
 		right: '2px',
 		'z-index': 1
 	    });
+
+	    /* The settings panel should be centered at the top of the 
+	       timeline.
+	     */
+	    $('#settings' + this._id).css({
+		position: 'absolute',
+		width: '200px',
+		left: ($('#canvas' + this._id).width() - 200)/2 + 'px',
+		top: '0px',
+		'background-color': '#99ccff',
+		'z-index': 1
+	    });
 	};
 	
 	
@@ -171,6 +205,6 @@ function Timeline(){
       Assumes setup has been called.
      */
     this.draw = function(){
-	console.log('dummy');
+	// First, we have to determine what the time is
     };
 }
