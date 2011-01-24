@@ -24,12 +24,21 @@ function Timeline() {
 	// of eight
 	Timeline._BODY_MARGINS = 8;
 
+	// How long should the length of a tickmark be?
+	Timeline._TICKMARK_HALF_LENGTH = 15;
+
 	// variables
 	Timeline._id = 0; // An id wich is unique for each instance of Timeline
 
 	// methods
-	Timeline._displaySettings = function(id){
+	Timeline._showSettings = function (id) {
 		$('#settings' + id).show().children().show();
+		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._hideSettings(' + id + ');');
+	};
+
+	Timeline._hideSettings = function (id) {
+		$('#settings' + id).hide();
+		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._showSettings(' + id + ');');
 	};
 
 	// member functions
@@ -41,13 +50,6 @@ function Timeline() {
 	this._forwardHandler = function () {
 		alert('forward clicked');
 	};
-
-	this._testResize = function () {
-		alert('resized');
-	};
-
-
-
 
 	/*
 	timeline.setup()
@@ -63,13 +65,11 @@ function Timeline() {
 		$('#' + timeline_wrapper_id).css('position', 'relative');
 		// Thanks to css-tricks.com/absolute-positioning-inside-relative-positioning
 
-
 		this._canvas = document.createElement('canvas');
 		this._canvas.setAttribute('id', 'canvas' + this._id);
+		this._canvas.setAttribute('width', $(window).width() - Timeline._BODY_MARGINS * 2);
+		this._canvas.setAttribute('height', $(window).height() - Timeline._BODY_MARGINS * 2);
 		$('#' + timeline_wrapper_id).append(this._canvas);
-
-		this._context = this._canvas.getContext('2d'); // we'll use the context
-		// to draw on the canvas in the draw() function.
 
 		// add back button
 		this._back = document.createElement('div');
@@ -94,21 +94,21 @@ function Timeline() {
 		this._settings.setAttribute('id', 'settings' + this._id);
 		this._settings.innerText = 'Settings\n';
 		*/
-		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center><a id="showHideSettings" href="javascript:Timeline._displaySettings(' + this._id + ');">Timeline Settings</a></center></div>'));
+		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center><a id="showHideSettings' + this._id + '" href="javascript:Timeline._showSettings(' + this._id + ');">Timeline Settings</a></center></div>'));
 		// Add some settings to the settings panel
 		$('#settings_wrapper' + this._id).append($('<div id="settings' + this._id + '"></div>'));
-		$('#settings' + this._id).text('TEST');
 		$('#settings' + this._id).hide();
 		// If stop_moving is set, the timeline should stop scrolling
-		$('#settings_wrapper' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
+		$('#settings' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
 		// label the checkbox
-		$('#settings_wrapper' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label>'));
-
+		$('#settings' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label>'));
+		$('#settings' + this._id).append($('<hr />'));
 
 
 		/* The _resizeHandler is called to fit the Timeline on the screen.
 		It sets the canvas dimensions, as well as those of the back and 
-		forward buttons.
+		forward buttons. General rule of thumb: If a values should change with resize,
+		it should be calculated as part of this function.
 		*/
 		this._resizeHandler = function (self) {
 			// First, we clear all style so as to prevent duplicates
@@ -200,6 +200,18 @@ function Timeline() {
 				'background-color': '#99ccff',
 				'z-index': 1
 			});
+
+
+			// finally draw on the canvas
+			// get the context for drawing on canvas in timeline.draw()
+			this._context = this._canvas.getContext('2d');
+			this._context.strokeStyle = '#000';
+
+			// where to draw the now tickmark
+			this._nowX = this._canvas.width / 8;
+			this._timelineY = this._canvas.height * 4 / 5 + 0.5;
+
+			this.draw();
 		};
 
 
@@ -207,6 +219,12 @@ function Timeline() {
 		var thisTimeline = this;
 		$(window).resize(function () {
 			thisTimeline._resizeHandler(thisTimeline);
+
+			// and now, finally, the timeline
+			this._context = this._canvas.getContext('2d'); // we'll use the context
+			// to draw on the canvas in the draw() function.
+
+
 		});
 	};
 
@@ -220,6 +238,33 @@ function Timeline() {
 	All times are calculated as an offset from NOW before being displayed on the timeline.
 	*/
 	this.draw = function () {
+		this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
+
+		var gradient = this._context.createLinearGradient(0, 0, this._canvas.width, 0);
+		gradient.addColorStop(0, 'orange');
+		gradient.addColorStop(1, 'white');
+		this._context.fillStyle = gradient;
+		this._context.fillRect(0, 0, this._canvas.width, this._canvas.height);
+
+		this._context.lineWidth = 1;
+		// draw timeline
+		this._context.beginPath();
+		this._context.moveTo(0, this._timelineY);
+		this._context.lineTo(this._canvas.width, this._timelineY);
+		this._context.stroke();
+		this._context.closePath();
+
 		// First, we have to determine what the time is
+		this._now = new Date().getTime();
+
+		// draw tickmark for now
+		this._context.beginPath();
+
+		this._context.moveTo(this._nowX, this._timelineY - Timeline._TICKMARK_HALF_LENGTH);
+		this._context.lineTo(this._nowX, this._timelineY + Timeline._TICKMARK_HALF_LENGTH);
+
+		this._context.stroke();
+		this._context.closePath();
+
 	};
 }
