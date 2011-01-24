@@ -27,6 +27,14 @@ function Timeline() {
 
 	Timeline._HEIGHT_FACTOR = 3 / 5;
 
+	// The following constants are used in the sliderChangedHandler
+	Timeline._MS_PER_MINUTE = 6000.0;
+	Timeline._MS_PER_HOUR = Timeline._MS_PER_MINUTE * 60;
+	Timeline._MS_PER_DAY = Timeline._MS_PER_HOUR * 24;
+	Timeline._MS_PER_WEEK = Timeline._MS_PER_DAY * 7;
+	Timeline._MS_PER_MONTH = Timeline._MS_PER_WEEK * 4;
+	Timeline._MS_PER_YEAR = Timeline._MS_PER_MONTH * 12;
+
 	// How long should the length of the now tickmark be?
 	Timeline._NOW_TICKMARK_HALF_LENGTH = 15;
 
@@ -49,6 +57,36 @@ function Timeline() {
 	Timeline._hideSettings = function (id) {
 		$('#settings' + id).hide();
 		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._showSettings(' + id + ');');
+	};
+
+	/* Here's how the timeline slider works: 
+		The sliderChangedHandler detects what range the current value fits in, and adjusts the step accordingly, to allow
+		for an easier transition. Let's test it out!
+	*/
+	Timeline._sliderChangedHandler = function (id) {
+		var val = $('#scale_slider' + id).val();
+		var step = 0;
+		var rangeDescription = 'seconds';
+
+		if (Timeline._MS_PER_MINUTE < val && val < Timeline._MS_PER_HOUR) {
+			step = Timeline._MS_PER_MINUTE;
+			rangeDescription = 'Minutes';
+		} else if (Timeline._MS_PER_HOUR <= val && val < Timeline._MS_PER_DAY) {
+			step = Timeline._MS_PER_DAY;
+			rangeDescription = 'Hours';
+		} else if (Timeline._MS_PER_DAY <= val && val < Timeline._MS_PER_WEEK) {
+			step = Timeline._MS_PER_DAY;
+			rangeDescription = "Days";
+		} else if (Timeline._MS_PER_WEEK <= val && val < Timeline._MS_PER_MONTH) {
+			step = Timeline._MS_PER_WEEK;
+			rangeDescription = 'Weeks';
+		} else if (Timeline._MS_PER_MONTH <= val && val < Timeline._MS_PER_YEAR) {
+			step = Timeline._MS_PER_MONTH;
+			rangeDescription = 'Months';
+		}
+
+		document.getElementById('scale_slider' + id).step = step;
+		$('#zoom_range' + id).text(rangeDescription);
 	};
 
 	// member functions
@@ -123,9 +161,12 @@ function Timeline() {
 
 		// Issue 3: Add user-mechanism for changing scale
 		/* This will be implemented using the html slider */
-		$('#timeline_wrapper').append($('<div id="scale_wrapper"' + this._id + '">Time Zoom: <span id="zoom_range"' + this._id + '"></span></div>'));
-		$('#scale_wrapper' + this._id).text('Time Zoom');
-		$('#scale_wrapper').append($('<input type="range" id="scale_slider' + this._id + '" min="0" max="100" step="1" value="0" />'));
+		$('#timeline_wrapper').append($('<div id="scale_wrapper' + this._id + '"></div>'));
+		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">seconds</span>');
+		$('#scale_wrapper' + this._id).append($('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._MS_PER_MINUTE + '" max="' + Timeline._MS_PER_YEAR + '" step="6000" value="6000" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />'));
+
+		// debug
+		//		$('#scale_wrapper' + this._id).append($('<div id="range
 
 		/* The _resizeHandler is called to fit the Timeline on the screen.
 		It sets the canvas dimensions, as well as those of the back and 

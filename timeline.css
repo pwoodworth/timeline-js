@@ -11,7 +11,7 @@
     SPACING: 5px;
 }
 
-#scale_wrapper
+#scale_wrapper0
 {
     position: absolute;
     left: 22px;/* BUTTON-WIDTH + SPACING */
@@ -19,9 +19,4 @@
     width: 200px;
     height: 50px;
     z-index: 1;
-}
-
-#scale_slider
-{
-
 }
