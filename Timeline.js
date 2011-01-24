@@ -27,7 +27,12 @@ function Timeline() {
 	// variables
 	Timeline._id = 0; // An id wich is unique for each instance of Timeline
 
+	// methods
+	Timeline._displaySettings = function(id){
+		$('#settings' + id).show().children().show();
+	};
 
+	// member functions
 	/* This function is called when the user clicks the back div*/
 	this._backHandler = function () {
 		alert('back clicked');
@@ -40,6 +45,8 @@ function Timeline() {
 	this._testResize = function () {
 		alert('resized');
 	};
+
+
 
 
 	/*
@@ -87,12 +94,17 @@ function Timeline() {
 		this._settings.setAttribute('id', 'settings' + this._id);
 		this._settings.innerText = 'Settings\n';
 		*/
-		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center>Timeline Settings <a id="showhideSettings" href="javascript:showHideSettings()">-</a></center></div>'));
+		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center><a id="showHideSettings" href="javascript:Timeline._displaySettings(' + this._id + ');">Timeline Settings</a></center></div>'));
 		// Add some settings to the settings panel
+		$('#settings_wrapper' + this._id).append($('<div id="settings' + this._id + '"></div>'));
+		$('#settings' + this._id).text('TEST');
+		$('#settings' + this._id).hide();
 		// If stop_moving is set, the timeline should stop scrolling
 		$('#settings_wrapper' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
 		// label the checkbox
 		$('#settings_wrapper' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label>'));
+
+
 
 		/* The _resizeHandler is called to fit the Timeline on the screen.
 		It sets the canvas dimensions, as well as those of the back and 
