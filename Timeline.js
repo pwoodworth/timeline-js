@@ -1,4 +1,4 @@
-/* 
+/* `
 Timeline.js
 
 (Requires jquery, developed with jquery-1.4.4.min.js in mind)   
@@ -23,9 +23,19 @@ function Timeline() {
 	// all sizes, but it does. Maybe it has something to do with the margin
 	// of eight
 	Timeline._BODY_MARGINS = 8;
+	Timeline._SCALE_MARGIN = 5;
 
-	// How long should the length of a tickmark be?
-	Timeline._TICKMARK_HALF_LENGTH = 15;
+	Timeline._HEIGHT_FACTOR = 3 / 5;
+
+	// How long should the length of the now tickmark be?
+	Timeline._NOW_TICKMARK_HALF_LENGTH = 15;
+
+	Timeline._MINUTE_TICKMARK_HALF_LENGTH = 5;
+	Timeline._HOUR_TICKMARK_HALF_LENGTH = 10;
+	Timeline._DAY_TICKMARK_HALF_LENGTH = 15;
+	Timeline._WEEK_TICKMARK_HALF_LENGTH = 20;
+
+	Timeline._START_END_BORDER = 40;
 
 	// variables
 	Timeline._id = 0; // An id wich is unique for each instance of Timeline
@@ -94,16 +104,28 @@ function Timeline() {
 		this._settings.setAttribute('id', 'settings' + this._id);
 		this._settings.innerText = 'Settings\n';
 		*/
-		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center><a id="showHideSettings' + this._id + '" href="javascript:Timeline._showSettings(' + this._id + ');">Timeline Settings</a></center></div>'));
+		$('#' + timeline_wrapper_id).append($('<div id="settings_wrapper' + this._id + '"><center><a id="showHideSettings' + this._id + '" href="javascript:Timeline._showSettings(' + this._id + ');">Settings</a></center></div>'));
 		// Add some settings to the settings panel
 		$('#settings_wrapper' + this._id).append($('<div id="settings' + this._id + '"></div>'));
 		$('#settings' + this._id).hide();
+
 		// If stop_moving is set, the timeline should stop scrolling
 		$('#settings' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
 		// label the checkbox
-		$('#settings' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label>'));
-		$('#settings' + this._id).append($('<hr />'));
+		$('#settings' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label><br>'));
 
+		// If lock_scale is set, the scale feature should disable
+		$('#settings' + this._id).append($('<input type="checkbox" id="lock_scale' + this._id + '">'));
+		// label the checkbox
+		$('#settings' + this._id).append($('<label for="#lock_scale' + this._id + '">Lock Time Zoom</label>'));
+
+		$('#settings' + this._id).append($('<hr>'));
+
+		// Issue 3: Add user-mechanism for changing scale
+		/* This will be implemented using the html slider */
+		$('#timeline_wrapper').append($('<div id="scale_wrapper"' + this._id + '">Time Zoom: <span id="zoom_range"' + this._id + '"></span></div>'));
+		$('#scale_wrapper' + this._id).text('Time Zoom');
+		$('#scale_wrapper').append($('<input type="range" id="scale_slider' + this._id + '" min="0" max="100" step="1" value="0" />'));
 
 		/* The _resizeHandler is called to fit the Timeline on the screen.
 		It sets the canvas dimensions, as well as those of the back and 
@@ -138,9 +160,11 @@ function Timeline() {
 			$('#canvas' + self._id).attr('style', '');
 			// this undoes our removeAttr('style') from earlier
 
+			this._canvas.setAttribute('width', canvas_width);
+			this._canvas.setAttribute('height', canvas_height);
 			$('#canvas' + self._id).css({
-				width: canvas_width,
-				height: canvas_height,
+				//width: canvas_width,
+				//height: canvas_height,
 				border: '1px solid', // to see what's going on
 				position: 'relative', // "take canvas out of flow"-rough quote
 				top: Timeline._BORDER_TOP, // seems to be the chrome default
@@ -201,17 +225,14 @@ function Timeline() {
 				'z-index': 1
 			});
 
-
-			// finally draw on the canvas
-			// get the context for drawing on canvas in timeline.draw()
-			this._context = this._canvas.getContext('2d');
-			this._context.strokeStyle = '#000';
-
 			// where to draw the now tickmark
 			this._nowX = this._canvas.width / 8;
 			this._timelineY = this._canvas.height * 4 / 5 + 0.5;
 
-			this.draw();
+			// this.draw()
+
+			this._startX = Timeline._START_END_BORDER;
+			this._endX = this._canvas.width - Timeline._START_END_BORDER;
 		};
 
 
@@ -219,13 +240,14 @@ function Timeline() {
 		var thisTimeline = this;
 		$(window).resize(function () {
 			thisTimeline._resizeHandler(thisTimeline);
-
-			// and now, finally, the timeline
-			this._context = this._canvas.getContext('2d'); // we'll use the context
-			// to draw on the canvas in the draw() function.
-
-
 		});
+
+		// and now, finally, the timeline
+		this._context = this._canvas.getContext('2d'); // we'll use the context
+		// to draw on the canvas in the draw() function.
+
+		// the offset determines what the visible range of time
+		this._offsetT = 0; // it begins with 0
 	};
 
 	/*
@@ -238,6 +260,9 @@ function Timeline() {
 	All times are calculated as an offset from NOW before being displayed on the timeline.
 	*/
 	this.draw = function () {
+		// let's find out what time it is.
+		this._nowDate = new Date();
+
 		this._context.clearRect(0, 0, this._canvas.width, this._canvas.height);
 
 		var gradient = this._context.createLinearGradient(0, 0, this._canvas.width, 0);
@@ -251,20 +276,33 @@ function Timeline() {
 		this._context.beginPath();
 		this._context.moveTo(0, this._timelineY);
 		this._context.lineTo(this._canvas.width, this._timelineY);
-		this._context.stroke();
 		this._context.closePath();
-
-		// First, we have to determine what the time is
-		this._now = new Date().getTime();
+		this._context.stroke();
 
 		// draw tickmark for now
 		this._context.beginPath();
 
-		this._context.moveTo(this._nowX, this._timelineY - Timeline._TICKMARK_HALF_LENGTH);
-		this._context.lineTo(this._nowX, this._timelineY + Timeline._TICKMARK_HALF_LENGTH);
+		this._context.moveTo(this._nowX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
+		this._context.lineTo(this._nowX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
 
-		this._context.stroke();
 		this._context.closePath();
+		this._context.stroke();
+
+
+		// draw Tickmarks for start and end
+		this._context.beginPath();
+		this._context.strokeStyle = '#000';
+		this._context.lineWidth = 1;
+
+		this._context.moveTo(this._startX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
+		this._context.lineTo(this._startX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
+
+		this._context.moveTo(this._endX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
+		this._context.lineTo(this._endX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
+
+		this._context.closePath();
+		this._context.stroke();
+
 
 	};
 }
