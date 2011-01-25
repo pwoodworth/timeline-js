@@ -59,8 +59,6 @@ function Timeline() {
 		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._showSettings(' + id + ');');
 	};
 
-	var scale_down = 0.00001;
-	var scale_up = 100000;
 	Timeline._SLIDER_MIN = 0;
 	Timeline._SLIDER_MAX = 100;
 	Timeline._SLIDER_STEP = 1;
@@ -101,6 +99,8 @@ function Timeline() {
 			rangeDescription = 'Years';
 		}
 
+		Timeline._timelines[id]._rangeMin = val;
+
 		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
 	};
@@ -111,6 +111,16 @@ function Timeline() {
 
 	Timeline._minToMs = function (min) {
 		return min * 6000;
+	};
+
+	Timeline._drawTick = function (timeline, x, halflength) {
+		timeline._context.beginPath();
+
+		timeline._context.moveTo(x, timeline._timelineY - halflength);
+		timeline._context.lineTo(x, timeline._timelineY + halflength);
+
+		timeline._context.closePath();
+		timeline._context.stroke();
 	};
 
 	// member functions
@@ -229,8 +239,8 @@ function Timeline() {
 			$('#canvas' + self._id).attr('style', '');
 			// this undoes our removeAttr('style') from earlier
 
-			this._canvas.setAttribute('width', canvas_width);
-			this._canvas.setAttribute('height', canvas_height);
+			self._canvas.setAttribute('width', canvas_width);
+			self._canvas.setAttribute('height', canvas_height);
 			$('#canvas' + self._id).css({
 				//width: canvas_width,
 				//height: canvas_height,
@@ -285,23 +295,25 @@ function Timeline() {
 			/* The settings panel should be centered at the top of the 
 			timeline.
 			*/
-			$('#settings_wrapper' + this._id).css({
+			$('#settings_wrapper' + self._id).css({
 				position: 'absolute',
 				width: '200px',
-				left: ($('#canvas' + this._id).width() - 200) / 2 + 'px',
+				left: ($('#canvas' + self._id).width() - 200) / 2 + 'px',
 				top: '0px',
 				'background-color': '#99ccff',
 				'z-index': 1
 			});
 
 			// where to draw the now tickmark
-			this._nowX = this._canvas.width / 8;
-			this._timelineY = this._canvas.height * 4 / 5 + 0.5;
+			self._nowX = self._canvas.width / 8;
+			self._timelineY = self._canvas.height * 4 / 5 + 0.5;
 
 			// this.draw()
 
-			this._startX = Timeline._START_END_BORDER;
-			this._endX = this._canvas.width - Timeline._START_END_BORDER;
+			self._startX = Timeline._START_END_BORDER;
+			self._endX = self._canvas.width - Timeline._START_END_BORDER;
+
+			self._rangeMin = Timeline._scale($('#range_slider' + self._id).val());
 		};
 
 
@@ -350,35 +362,19 @@ function Timeline() {
 		this._context.stroke();
 
 		// draw tickmark for now
-		this._context.beginPath();
-
-		this._context.moveTo(this._nowX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
-		this._context.lineTo(this._nowX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
-
-		this._context.closePath();
-		this._context.stroke();
+		Timeline._drawTick(this, this._nowX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 
 		// draw Tickmarks for start and end
-		this._context.beginPath();
-		this._context.strokeStyle = '#000';
-		this._context.lineWidth = 1;
-
 		// start
-		this._context.moveTo(this._startX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
-		this._context.lineTo(this._startX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
+		Timeline._drawTick(this, this._startX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// end
-		this._context.moveTo(this._endX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
-		this._context.lineTo(this._endX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
-
-		this._context.closePath();
-		this._context.stroke();
-
+		Timeline._drawTick(this, this._endX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// calculate the time of startX
-		var range = Timeline._scale($('#scale_slider' + this._id).val());
-		var rangeXOverRangeMin = (this._endX - this._startX) / range;
+		//		var rangeMin = Timeline._scale($('#scale_slider' + this._id).val());
+		var rangeXOverRangeMin = (this._endX - this._startX) / Timeline._timelines[id]._rangeMin;
 		var nowMin = Timeline._msToMin(this._nowDate.getTime());
 		var startMin = Timeline._msToMin(this._nowDate.getTime()) + ((this._nowX - this._startX) / rangeXOverRangeMin);
 
