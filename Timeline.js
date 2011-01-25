@@ -148,6 +148,9 @@ function Timeline() {
 		$('#' + timeline_wrapper_id).css('position', 'relative');
 		// Thanks to css-tricks.com/absolute-positioning-inside-relative-positioning
 
+		// add this to collection of timelines, so it is retrievable by id, in cases where
+		// an event handler turns this from an instance of Timeline to an instance of event
+		// details.
 		Timeline._timelines[this._id] = this;
 
 		this._canvas = document.createElement('canvas');
@@ -373,20 +376,6 @@ function Timeline() {
 		Timeline._drawTick(this, this._endX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// calculate the time of startX
-		//		var rangeMin = Timeline._scale($('#scale_slider' + this._id).val());
-		var rangeXOverRangeMin = (this._endX - this._startX) / Timeline._timelines[id]._rangeMin;
-		var nowMin = Timeline._msToMin(this._nowDate.getTime());
-		var startMin = Timeline._msToMin(this._nowDate.getTime()) + ((this._nowX - this._startX) / rangeXOverRangeMin);
-
-		var startMs = parseInt(Timeline._minToMs(startMin))
-		var startDate = new Date();
-		startDate.setTime(startMs);
-		// label start
-
-		this._context.lineWidth = 1;
-		this._context.font = '10pt sans serif';
-		this._context.strokeStyle = '#000';
-		this._context.strokeText(startDate.toLocaleString(), this._startX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
-
+		
 	};
 }
