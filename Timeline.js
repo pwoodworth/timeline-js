@@ -28,12 +28,12 @@ function Timeline() {
 	Timeline._HEIGHT_FACTOR = 3 / 5;
 
 	// The following constants are used in the sliderChangedHandler
-	Timeline._MS_PER_MINUTE = 6000.0;
-	Timeline._MS_PER_HOUR = Timeline._MS_PER_MINUTE * 60;
-	Timeline._MS_PER_DAY = Timeline._MS_PER_HOUR * 24;
-	Timeline._MS_PER_WEEK = Timeline._MS_PER_DAY * 7;
-	Timeline._MS_PER_MONTH = Timeline._MS_PER_WEEK * 4;
-	Timeline._MS_PER_YEAR = Timeline._MS_PER_MONTH * 12;
+	Timeline._MIN_PER_MINUTE = 1;
+	Timeline._MIN_PER_HOUR = Timeline._MIN_PER_MINUTE * 60.0;
+	Timeline._MIN_PER_DAY = Timeline._MIN_PER_HOUR * 24.0;
+	Timeline._MIN_PER_WEEK = Timeline._MIN_PER_DAY * 7.0;
+	Timeline._MIN_PER_MONTH = Timeline._MIN_PER_WEEK * 4.0;
+	Timeline._MIN_PER_YEAR = Timeline._MIN_PER_MONTH * 12.0;
 
 	// How long should the length of the now tickmark be?
 	Timeline._NOW_TICKMARK_HALF_LENGTH = 15;
@@ -59,34 +59,58 @@ function Timeline() {
 		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._showSettings(' + id + ');');
 	};
 
+	var scale_down = 0.00001;
+	var scale_up = 100000;
+	Timeline._SLIDER_MIN = 0;
+	Timeline._SLIDER_MAX = 100;
+	Timeline._SLIDER_STEP = 1;
+
+	Timeline._scale = function (value) {
+		var minIn = Timeline._SLIDER_MIN;
+		var maxIn = Timeline._SLIDER_MAX;
+
+		var minOut = Math.log(Timeline._MIN_PER_MINUTE);
+		var maxOut = Math.log(Timeline._MIN_PER_YEAR);
+
+		var scale = (maxOut - minOut) / (maxIn - minIn);
+
+		return Math.exp(minOut + scale * (value - minIn));
+	};
+
 	/* Here's how the timeline slider works: 
 		The sliderChangedHandler detects what range the current value fits in, and adjusts the step accordingly, to allow
-		for an easier transition. Let's test it out!
+		for an easier transition. The slider determines how many minutes pass between startX and endX
 	*/
 	Timeline._sliderChangedHandler = function (id) {
-		var val = $('#scale_slider' + id).val();
-		var step = 0;
-		var rangeDescription = 'seconds';
+		// get the value from scale_slider and scale it.
+		var val = Timeline._scale($('#scale_slider' + id).val());
+		var rangeDescription = 'Minutes';
+		var step = 1;
 
-		if (Timeline._MS_PER_MINUTE < val && val < Timeline._MS_PER_HOUR) {
-			step = Timeline._MS_PER_MINUTE;
+		if (Timeline._MIN_PER_MINUTE <= val && val < Timeline._MIN_PER_HOUR) {
 			rangeDescription = 'Minutes';
-		} else if (Timeline._MS_PER_HOUR <= val && val < Timeline._MS_PER_DAY) {
-			step = Timeline._MS_PER_DAY;
+		} else if (Timeline._MIN_PER_HOUR <= val && val < Timeline._MIN_PER_DAY) {
 			rangeDescription = 'Hours';
-		} else if (Timeline._MS_PER_DAY <= val && val < Timeline._MS_PER_WEEK) {
-			step = Timeline._MS_PER_DAY;
+		} else if (Timeline._MIN_PER_DAY <= val && val < Timeline._MIN_PER_WEEK) {
 			rangeDescription = "Days";
-		} else if (Timeline._MS_PER_WEEK <= val && val < Timeline._MS_PER_MONTH) {
-			step = Timeline._MS_PER_WEEK;
+		} else if (Timeline._MIN_PER_WEEK <= val && val < Timeline._MIN_PER_MONTH) {
 			rangeDescription = 'Weeks';
-		} else if (Timeline._MS_PER_MONTH <= val && val < Timeline._MS_PER_YEAR) {
-			step = Timeline._MS_PER_MONTH;
+		} else if (Timeline._MIN_PER_MONTH <= val && val < Timeline._MIN_PER_YEAR) {
 			rangeDescription = 'Months';
+		} else if (Timeline._MIN_PER_YEAR <= val) {
+			rangeDescription = 'Years';
 		}
 
-		document.getElementById('scale_slider' + id).step = step;
+		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
+	};
+
+	Timeline._msToMin = function(ms){
+		return ms/6000;
+	};
+
+	Timeline._minToMs = function (min) {
+		return min * 6000;
 	};
 
 	// member functions
@@ -105,6 +129,7 @@ function Timeline() {
 	timeline_wrapper_id is the id of an element which is to contain this
 	specific timeline. 
 	*/
+	Timeline._timelines = [];
 	this.setup = function (timeline_wrapper_id) {
 
 		// add canvas
@@ -112,6 +137,8 @@ function Timeline() {
 		this._timeline_wrapper_id = timeline_wrapper_id;
 		$('#' + timeline_wrapper_id).css('position', 'relative');
 		// Thanks to css-tricks.com/absolute-positioning-inside-relative-positioning
+
+		Timeline._timelines[this._id] = this;
 
 		this._canvas = document.createElement('canvas');
 		this._canvas.setAttribute('id', 'canvas' + this._id);
@@ -162,8 +189,9 @@ function Timeline() {
 		// Issue 3: Add user-mechanism for changing scale
 		/* This will be implemented using the html slider */
 		$('#timeline_wrapper').append($('<div id="scale_wrapper' + this._id + '"></div>'));
-		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">seconds</span>');
-		$('#scale_wrapper' + this._id).append($('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._MS_PER_MINUTE + '" max="' + Timeline._MS_PER_YEAR + '" step="6000" value="6000" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />'));
+		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">Minutes</span>');
+		// use SLIDER_MIN, SLIDER_MAX and SLIDER_STEP above to modify the following line of code!!!
+		$('#scale_wrapper' + this._id).append($('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + Timeline._SLIDER_MAX + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_MIN + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />'));
 
 		// debug
 		//		$('#scale_wrapper' + this._id).append($('<div id="range
@@ -278,6 +306,7 @@ function Timeline() {
 
 
 		this._resizeHandler(this);
+
 		var thisTimeline = this;
 		$(window).resize(function () {
 			thisTimeline._resizeHandler(thisTimeline);
@@ -335,15 +364,33 @@ function Timeline() {
 		this._context.strokeStyle = '#000';
 		this._context.lineWidth = 1;
 
+		// start
 		this._context.moveTo(this._startX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
 		this._context.lineTo(this._startX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
 
+		// end
 		this._context.moveTo(this._endX, this._timelineY - Timeline._NOW_TICKMARK_HALF_LENGTH);
 		this._context.lineTo(this._endX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		this._context.closePath();
 		this._context.stroke();
 
+
+		// calculate the time of startX
+		var range = Timeline._scale($('#scale_slider' + this._id).val());
+		var rangeXOverRangeMin = (this._endX - this._startX) / range;
+		var nowMin = Timeline._msToMin(this._nowDate.getTime());
+		var startMin = Timeline._msToMin(this._nowDate.getTime()) + ((this._nowX - this._startX) / rangeXOverRangeMin);
+
+		var startMs = parseInt(Timeline._minToMs(startMin))
+		var startDate = new Date();
+		startDate.setTime(startMs);
+		// label start
+
+		this._context.lineWidth = 1;
+		this._context.font = '10pt sans serif';
+		this._context.strokeStyle = '#000';
+		this._context.strokeText(startDate.toLocaleString(), this._startX, this._timelineY + Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 	};
 }
