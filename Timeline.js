@@ -1,5 +1,6 @@
 /* `
 Timeline.js
+Joshua Marshall Moore
 
 (Requires jquery, developed with jquery-1.4.4.min.js in mind)   
 */
@@ -12,6 +13,13 @@ In between, resizing the window may trigger the resize() function which
 adjusts the timeline's dimensions and other settings.
 */
 function Timeline() {
+	/*
+	Implementation Details:
+
+	For each piece of functionality, decide whether it belongs in setup, draw, resizeHandler,
+	sliderChangedHandler or a combination of the aforementioned.
+	*/
+
 	// constants
 	Timeline._BORDER_SIDES = 20; // The border on each side of the timeline,
 	// We'll need this value later when calculating back's top offset
@@ -76,8 +84,8 @@ function Timeline() {
 	};
 
 	/* Here's how the timeline slider works: 
-		The sliderChangedHandler detects what range the current value fits in, and adjusts the step accordingly, to allow
-		for an easier transition. The slider determines how many minutes pass between startX and endX
+	The sliderChangedHandler detects what range the current value fits in, and adjusts the step accordingly, to allow
+	for an easier transition. The slider determines how many minutes pass between startX and endX
 	*/
 	Timeline._sliderChangedHandler = function (id) {
 		// get the value from scale_slider and scale it.
@@ -100,6 +108,7 @@ function Timeline() {
 		}
 
 		Timeline._timelines[id]._rangeMin = val;
+		Timeline._timelines[id]._minPerPixel = val / (Timeline._timelines[id]._endX - Timeline._timelines[id]._startX); // let's hope endx and startx are defined
 
 		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
@@ -333,6 +342,13 @@ function Timeline() {
 
 		// the offset determines what the visible range of time
 		this._offsetT = 0; // it begins with 0
+
+		this._rangeMin = Timeline._scale($('#scale_slider' + this._id).val());
+		this._minPerPixel = this._rangeMin / (this._endX - this._startX);
+
+		// establish the startDate, endDate, so it may be used in draw
+		this._startDate = new Date();
+		this._endDate = new Date();
 	};
 
 	/*
@@ -376,6 +392,9 @@ function Timeline() {
 		Timeline._drawTick(this, this._endX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// calculate the time of startX
-		
+		var startMin = (Timeline._msToMin(this._nowDate.getTime())) - (this._nowX - this._startX) * Timeline._timelines[this._id]._minPerPixel;
+		this._startDate.setTime(Timeline._minToMs(startMin));
+		console.log(this._startDate.toString());
+		alert((this._endX - this._startX) / (this._nowX - this._startX));
 	};
 }
