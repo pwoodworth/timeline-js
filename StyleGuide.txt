@@ -1,0 +1,11 @@
+To facilitate reading over the code at a later point, I will try to adhere to 
+the following style guidelines.
+
+ClassName: Names beginning with an upper case letter are class names.
+
+Varname: variable names begin with a lower case letter.
+
+_name: Names beginning with an underscore shouldn't be used outside the class
+       they're declared in. This goes for functions as well as variable names.
+
+Other style guidelines may pop up in the future, or not. We'll see.
