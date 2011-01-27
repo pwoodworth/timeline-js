@@ -1,6 +1,5 @@
 /* `
 Timeline.js
-Joshua Marshall Moore
 
 (Requires jquery, developed with jquery-1.4.4.min.js in mind)   
 */
