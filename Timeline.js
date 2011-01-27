@@ -210,7 +210,7 @@ function Timeline() {
 		// Issue 3: Add user-mechanism for changing scale
 		/* This will be implemented using the html slider */
 		$('#timeline_wrapper').append($('<div id="scale_wrapper' + this._id + '"></div>'));
-		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">Minutes</span>');
+		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">'+Timeline._DEFAULT_RANGE_DESCRIPTION+'</span>');
 		// use SLIDER_MIN, SLIDER_MAX and SLIDER_STEP above to modify the following line of code!!!
 		$('#scale_wrapper' + this._id).append($('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + Timeline._SLIDER_MAX + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_MIN + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />'));
 
