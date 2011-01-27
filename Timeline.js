@@ -108,18 +108,17 @@ function Timeline() {
 		}
 
 		Timeline._timelines[id]._rangeMin = val;
-		Timeline._timelines[id]._minPerPixel = val / (Timeline._timelines[id]._endX - Timeline._timelines[id]._startX); // let's hope endx and startx are defined
 
 		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
 	};
 
 	Timeline._msToMin = function(ms){
-		return ms/6000;
+		return ms/(60 * 1000);
 	};
 
 	Timeline._minToMs = function (min) {
-		return min * 6000;
+		return min * (60 * 1000);
 	};
 
 	Timeline._drawTick = function (timeline, x, halflength) {
@@ -326,6 +325,10 @@ function Timeline() {
 			self._endX = self._canvas.width - Timeline._START_END_BORDER;
 
 			self._rangeMin = Timeline._scale($('#range_slider' + self._id).val());
+
+
+			// call resizeHandler to sliderChangedHandler to define rangeMin and minPerPixel
+			Timeline._sliderChangedHandler(self._id);
 		};
 
 
@@ -340,15 +343,16 @@ function Timeline() {
 		this._context = this._canvas.getContext('2d'); // we'll use the context
 		// to draw on the canvas in the draw() function.
 
-		// the offset determines what the visible range of time
+		// the offset will determine the visible range of time
 		this._offsetT = 0; // it begins with 0
-
-		this._rangeMin = Timeline._scale($('#scale_slider' + this._id).val());
-		this._minPerPixel = this._rangeMin / (this._endX - this._startX);
 
 		// establish the startDate, endDate, so it may be used in draw
 		this._startDate = new Date();
 		this._endDate = new Date();
+
+		$('#range_slider' + self._id).change(function () {
+			Timeline._sliderChangedHandler(self._id);
+		});
 	};
 
 	/*
@@ -392,9 +396,10 @@ function Timeline() {
 		Timeline._drawTick(this, this._endX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// calculate the time of startX
-		var startMin = (Timeline._msToMin(this._nowDate.getTime())) - (this._nowX - this._startX) * Timeline._timelines[this._id]._minPerPixel;
-		this._startDate.setTime(Timeline._minToMs(startMin));
-		console.log(this._startDate.toString());
-		alert((this._endX - this._startX) / (this._nowX - this._startX));
+		var nowMin = Timeline._msToMin(this._nowDate.getTime());
+		var startMin = nowMin - ((this._nowX - this._startX) * this._minPerPixel );
+		var startMs = Timeline._minToMs(startMin);
+		var startDate = new Date(startMs);
+		console.log(startDate.toString());
 	};
 }
