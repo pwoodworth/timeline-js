@@ -36,12 +36,12 @@ function Timeline() {
 	Timeline._HEIGHT_FACTOR = 3 / 5;
 
 	// The following constants are used in the sliderChangedHandler
-	Timeline._MIN_PER_MINUTE = 1;
-	Timeline._MIN_PER_HOUR = Timeline._MIN_PER_MINUTE * 60.0;
-	Timeline._MIN_PER_DAY = Timeline._MIN_PER_HOUR * 24.0;
-	Timeline._MIN_PER_WEEK = Timeline._MIN_PER_DAY * 7.0;
-	Timeline._MIN_PER_MONTH = Timeline._MIN_PER_WEEK * 4.0;
-	Timeline._MIN_PER_YEAR = Timeline._MIN_PER_MONTH * 12.0;
+	Timeline._MS_PER_MINUTE = 60 * 1000;
+	Timeline._MS_PER_HOUR = Timeline._MS_PER_MINUTE * 60.0;
+	Timeline._MS_PER_DAY = Timeline._MS_PER_HOUR * 24.0;
+	Timeline._MS_PER_WEEK = Timeline._MS_PER_DAY * 7.0;
+	Timeline._MS_PER_MONTH = Timeline._MS_PER_WEEK * 4.0;
+	Timeline._MS_PER_YEAR = Timeline._MS_PER_MONTH * 12.0;
 
 	// How long should the length of the now tickmark be?
 	Timeline._NOW_TICKMARK_HALF_LENGTH = 15;
@@ -75,8 +75,8 @@ function Timeline() {
 		var minIn = Timeline._SLIDER_MIN;
 		var maxIn = Timeline._SLIDER_MAX;
 
-		var minOut = Math.log(Timeline._MIN_PER_MINUTE);
-		var maxOut = Math.log(Timeline._MIN_PER_YEAR);
+		var minOut = Math.log(Timeline._MS_PER_MINUTE);
+		var maxOut = Math.log(Timeline._MS_PER_YEAR);
 
 		var scale = (maxOut - minOut) / (maxIn - minIn);
 
@@ -87,34 +87,34 @@ function Timeline() {
 	The sliderChangedHandler detects what range the current value fits in, and adjusts the step accordingly, to allow
 	for an easier transition. The slider determines how many minutes pass between startX and endX
 	*/
+	Timeline._DEFAULT_RANGE_DESCRIPTION = "Seconds";
 	Timeline._sliderChangedHandler = function (id) {
 		// get the value from scale_slider and scale it.
 		var val = Timeline._scale($('#scale_slider' + id).val());
-		var rangeDescription = 'Minutes';
-		var step = 1;
+		var rangeDescription = Timeline._DEFAULT_RANGE_DESCRIPTION;
 
-		if (Timeline._MIN_PER_MINUTE <= val && val < Timeline._MIN_PER_HOUR) {
+		if (Timeline._MS_PER_MINUTE <= val && val < Timeline._MS_PER_HOUR) {
 			rangeDescription = 'Minutes';
-		} else if (Timeline._MIN_PER_HOUR <= val && val < Timeline._MIN_PER_DAY) {
+		} else if (Timeline._MS_PER_HOUR <= val && val < Timeline._MS_PER_DAY) {
 			rangeDescription = 'Hours';
-		} else if (Timeline._MIN_PER_DAY <= val && val < Timeline._MIN_PER_WEEK) {
+		} else if (Timeline._MS_PER_DAY <= val && val < Timeline._MS_PER_WEEK) {
 			rangeDescription = "Days";
-		} else if (Timeline._MIN_PER_WEEK <= val && val < Timeline._MIN_PER_MONTH) {
+		} else if (Timeline._MS_PER_WEEK <= val && val < Timeline._MS_PER_MONTH) {
 			rangeDescription = 'Weeks';
-		} else if (Timeline._MIN_PER_MONTH <= val && val < Timeline._MIN_PER_YEAR) {
+		} else if (Timeline._MS_PER_MONTH <= val && val < Timeline._MS_PER_YEAR) {
 			rangeDescription = 'Months';
-		} else if (Timeline._MIN_PER_YEAR <= val) {
+		} else if (Timeline._MS_PER_YEAR <= val) {
 			rangeDescription = 'Years';
 		}
 
-		Timeline._timelines[id]._rangeMin = val;
-
 		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
+
+		Timeline._timelines[id]._rangeInMilliseconds = val;
 	};
 
-	Timeline._msToMin = function(ms){
-		return ms/(60 * 1000);
+	Timeline._msToMin = function (ms) {
+		return ms / (60 * 1000);
 	};
 
 	Timeline._minToMs = function (min) {
@@ -324,17 +324,17 @@ function Timeline() {
 			self._startX = Timeline._START_END_BORDER;
 			self._endX = self._canvas.width - Timeline._START_END_BORDER;
 
-			self._rangeMin = Timeline._scale($('#range_slider' + self._id).val());
-
-
 			// call resizeHandler to sliderChangedHandler to define rangeMin and minPerPixel
 			Timeline._sliderChangedHandler(self._id);
+
+			// calculate how many minutes are in a pixel
+			self._minutesPerPixel = self._rangeInMinutes / (self._endX - self._startX);
 		};
 
 
 		this._resizeHandler(this);
 
-		var thisTimeline = this;
+		var thisTimeline = this; // todo make this safe for multiple timelines
 		$(window).resize(function () {
 			thisTimeline._resizeHandler(thisTimeline);
 		});
@@ -396,10 +396,16 @@ function Timeline() {
 		Timeline._drawTick(this, this._endX, Timeline._NOW_TICKMARK_HALF_LENGTH);
 
 		// calculate the time of startX
-		var nowMin = Timeline._msToMin(this._nowDate.getTime());
-		var startMin = nowMin - ((this._nowX - this._startX) * this._minPerPixel );
-		var startMs = Timeline._minToMs(startMin);
-		var startDate = new Date(startMs);
-		console.log(startDate.toString());
+		/*
+		* segmentTime = (segmentPixels / totalPixels) * totalTime
+		* startTime = nowTime - segmentTime
+		* startTime = nowTime - (segmentPixels / totalpixels * totalTime)
+		*/
+		var totalPixels = this._endX - this._startX;
+		var segmentPixels = this._nowX - this._startX;
+		var startTime = this._nowDate.getTime() - Math.floor(segmentPixels / totalPixels * this._rangeInMilliseconds);
+		this._startDate.setTime(startTime);
+		console.log(this._nowDate.toString() + '\n' + this._startDate.toString());
+		// console.log(this._rangeInMilliseconds + ', ' + this._startDate.toString());
 	};
 }
