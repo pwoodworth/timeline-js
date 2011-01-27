@@ -100,11 +100,9 @@ function Timeline() {
 			rangeDescription = "Days";
 		} else if (Timeline._MS_PER_WEEK <= val && val < Timeline._MS_PER_MONTH) {
 			rangeDescription = 'Weeks';
-		} else if (Timeline._MS_PER_MONTH <= val && val < Timeline._MS_PER_YEAR) {
+		} else if (Timeline._MS_PER_MONTH <= val) {
 			rangeDescription = 'Months';
-		} else if (Timeline._MS_PER_YEAR <= val) {
-			rangeDescription = 'Years';
-		}
+		} 
 
 		// display the current range to the user
 		$('#zoom_range' + id).text(rangeDescription);
