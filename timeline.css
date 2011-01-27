@@ -1,0 +1,22 @@
+﻿@variables
+{
+    /* These are hand copies of entsprechende values in Timeline.js */ 
+    BORDER-SIDES: 20px;
+    OFFSET-LEFT: 8px;
+    OFFSET-TOP: 8px;
+    BUTTON-WIDTH: 17px;
+    BODY-MARGINS: 8px;
+    MAGIC-DISTANCE: 6px;
+    BODY-MARGINS: 8px;
+    SPACING: 5px;
+}
+
+#scale_wrapper0
+{
+    position: absolute;
+    left: 22px;/* BUTTON-WIDTH + SPACING */
+    top: 0px;
+    width: 200px;
+    height: 50px;
+    z-index: 1;
+}

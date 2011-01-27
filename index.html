@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+	<title>timeline-js</title>
+	<script type="text/javascript" src="jquery-1.4.4.min.js"></script>
+	<script type="text/javascript" src="Timeline.js"></script>
+	<link rel="Stylesheet" href="timeline.css" />
+</head>
+<body>
+	<div id="ad_wrapper">
+		<img src="ad_filler.png" />
+	</div>
+	<h1>Timeline</h1>
+	<div id="timeline_wrapper">	</div>
+	<script type="text/javascript">
+
+		var timeline = new Timeline();
+		timeline.setup('timeline_wrapper');
+		//timeline.draw();
+		setInterval('timeline.draw()', 60);
+
+	</script>
+</body>
+</html>
