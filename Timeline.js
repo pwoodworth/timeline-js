@@ -57,18 +57,20 @@ function Timeline() {
 
 	// methods
 	Timeline._showSettings = function (id) {
-		$('#settings' + id).show().children().show();
+		$('#settings' + id).show(500).children().show();
 		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._hideSettings(' + id + ');');
 	};
 
 	Timeline._hideSettings = function (id) {
-		$('#settings' + id).hide();
+		$('#settings' + id).hide(500);
 		$('#showHideSettings' + id).attr('href', 'javascript:Timeline._showSettings(' + id + ');');
 	};
 
 	Timeline._SLIDER_MIN = 0;
 	Timeline._SLIDER_MAX = 100;
 	Timeline._SLIDER_STEP = 1;
+
+	Timeline._BEYOND_SLIDER_MAX = 80; // this value lets us actually get past years
 
 	Timeline._scale = function (value) {
 		var minIn = Timeline._SLIDER_MIN;
@@ -126,6 +128,19 @@ function Timeline() {
 
 		timeline._context.closePath();
 		timeline._context.stroke();
+	};
+
+	this._labelId = 0;
+	Timeline._label = function(text, x, y, callback){
+		$('#timeline_wrapper' + this._id).append('<div id="label' + this._id + '_' + this._labelId + '">' + text + '</div>');
+		$('#label' + this._id + '_' + this._labelId)
+			.css({
+				'position': 'absolute',
+				'left': x,
+				'top': y,
+				'z-index': 1
+			})
+			.click(callback)
 	};
 
 	// member functions
@@ -207,9 +222,13 @@ function Timeline() {
 		// Issue 3: Add user-mechanism for changing scale
 		/* This will be implemented using the html slider */
 		$('#timeline_wrapper').append($('<div id="scale_wrapper' + this._id + '"></div>'));
-		$('#scale_wrapper' + this._id).text('Time Zoom: ').append('<span id="zoom_range' + this._id + '">'+Timeline._DEFAULT_RANGE_DESCRIPTION+'</span>');
+		$('#scale_wrapper' + this._id).text('Time Zoom: ').append(
+			'<span id="zoom_range' + this._id + '">' + Timeline._DEFAULT_RANGE_DESCRIPTION + '</span>'
+		);
 		// use SLIDER_MIN, SLIDER_MAX and SLIDER_STEP above to modify the following line of code!!!
-		$('#scale_wrapper' + this._id).append($('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + Timeline._SLIDER_MAX + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_MIN + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />'));
+		$('#scale_wrapper' + this._id).append(
+			$('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + (Timeline._SLIDER_MAX + Timeline._BEYOND_SLIDER_MAX) + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_MIN + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />')
+		);
 
 		// debug
 		//		$('#scale_wrapper' + this._id).append($('<div id="range
@@ -402,7 +421,41 @@ function Timeline() {
 		var segmentPixels = this._nowX - this._startX;
 		var startTime = this._nowDate.getTime() - Math.floor(segmentPixels / totalPixels * this._rangeInMilliseconds);
 		this._startDate.setTime(startTime);
-		console.log(this._nowDate.toString() + '\n' + this._startDate.toString());
-		// console.log(this._rangeInMilliseconds + ', ' + this._startDate.toString());
+
+		// calculate the time of endX
+		var endTime = this._nowDate.getTime() + Math.floor((this._rangeInMilliseconds / totalPixels) * (this._endX - this._nowX));
+		this._endDate.setTime(endTime);
+		// Issue 7: Label startx, nowX and endx
+		function drawText(text, x, y, timeline) {
+			timeline._context.beginPath();
+			timeline._context.font = '14px mono sans serif';
+			timeline._context.strokeText(text, Math.floor(x) + 0.5, Math.floor(y) + 0.5);
+			timeline._context.closePath();
+			timeline._context.stroke();
+		}
+
+		function formatDate(date) {
+			str = (date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear();
+			return str;
+		}
+
+		function formatTime(date) {
+			str = date.getHours() + ':' + (date.getMinutes() > 9 ? date.getMinutes() : '0' + date.getMinutes());
+			return str;
+		}
+
+		var fontSize = 14;
+		// startx
+		drawText(formatDate(this._startDate), this._startX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
+		drawText(formatTime(this._startDate), this._startX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
+
+		// nowX
+		drawText(formatDate(this._nowDate), this._nowX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
+		drawText(formatTime(this._nowDate), this._nowX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
+
+		// endX
+		var endXtext = this._endX - this._context.measureText(formatDate(this._endDate)).width;
+		drawText(formatDate(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
+		drawText(formatTime(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
 	};
 }
