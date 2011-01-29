@@ -212,11 +212,6 @@ function Timeline() {
 		$('#settings_wrapper' + this._id).append($('<div id="settings' + this._id + '"></div>'));
 		$('#settings' + this._id).hide();
 
-		// If stop_moving is set, the timeline should stop scrolling
-		$('#settings' + this._id).append($('<input type="checkbox" id="stop_moving' + this._id + '">'));
-		// label the checkbox
-		$('#settings' + this._id).append($('<label for="#stop_moving' + this._id + '">Stop moving the timeline</label><br>'));
-
 		// If lock_scale is set, the scale feature should disable
 		$('#settings' + this._id).append($('<input type="checkbox" id="lock_scale' + this._id + '">'));
 		// label the checkbox
