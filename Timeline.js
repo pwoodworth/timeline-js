@@ -1,7 +1,13 @@
 /* `
 Timeline.js
 
-(Requires jquery, developed with jquery-1.4.4.min.js in mind)   
+Joshua Moore 
+With the generous help of the stackoverflow.com community
+
+Dependencies:
+jquery-1.4.4.min.js
+// jquery.mousewheel.min.js
+
 */
 
 /*
@@ -69,6 +75,7 @@ function Timeline() {
 	Timeline._SLIDER_MIN = 0;
 	Timeline._SLIDER_MAX = 100;
 	Timeline._SLIDER_STEP = 1;
+	Timeline._SLIDER_DEFAULT = 50;
 
 	Timeline._BEYOND_SLIDER_MAX = 80; // this value lets us actually get past years
 
@@ -185,14 +192,12 @@ function Timeline() {
 		// id's help us jquery stuff, ensuring their unique across instances
 		// lets us potentially put several instance on the same page.
 
-		this._back.onclick = this._backHandler; // set event handler: onclick
 		$('#' + timeline_wrapper_id).append(this._back);
 
 
 		// add forward button
 		this._forward = document.createElement('div');
 		this._forward.setAttribute('id', 'forward' + this._id);
-		this._forward.onclick = this._forwardHandler;
 		$('#' + timeline_wrapper_id).append(this._forward);
 
 
@@ -227,7 +232,7 @@ function Timeline() {
 		);
 		// use SLIDER_MIN, SLIDER_MAX and SLIDER_STEP above to modify the following line of code!!!
 		$('#scale_wrapper' + this._id).append(
-			$('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + (Timeline._SLIDER_MAX + Timeline._BEYOND_SLIDER_MAX) + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_MIN + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />')
+			$('<input type="range" id="scale_slider' + this._id + '" min="' + Timeline._SLIDER_MIN + '" max="' + (Timeline._SLIDER_MAX + Timeline._BEYOND_SLIDER_MAX) + '" step="' + Timeline._SLIDER_STEP + '" value="' + Timeline._SLIDER_DEFAULT + '" onchange="Timeline._sliderChangedHandler(' + this._id + ');" />')
 		);
 
 		// debug
@@ -326,13 +331,13 @@ function Timeline() {
 				position: 'absolute',
 				width: '200px',
 				left: ($('#canvas' + self._id).width() - 200) / 2 + 'px',
-				top: '0px',
+				top: '1px', // canvas border thickness, or was it timeline_wrapper?
 				'background-color': '#99ccff',
 				'z-index': 1
 			});
 
 			// where to draw the now tickmark
-			self._nowX = self._canvas.width / 8;
+			self._initialNowX = self._canvas.width / 8;
 			self._timelineY = self._canvas.height * 4 / 5 + 0.5;
 
 			// this.draw()
@@ -369,7 +374,30 @@ function Timeline() {
 		$('#range_slider' + self._id).change(function () {
 			Timeline._sliderChangedHandler(self._id);
 		});
-	};
+
+		//		// use jquery.mousewheel to scroll the time zoom
+		//		$('#canvas' + self._id).mousewheel(function (event, delta) {
+		//			alert('test');
+		//			$('#range_slider' + self._id).val(parseInt($('#range_slider' + self._id).val()) + delta);
+		//		});
+
+		// Issue 11: Scroll nowx and recalculate startDate and endDate when back or forward are clicked
+		this._offset = 0;
+		self = this;
+		$('#back' + self._id).mouseup(function () {
+			clearInterval(self._decOffsetInterval);
+		}).mousedown(function () {
+			self._decOffsetInterval = setInterval('self._offset--;', 30);
+		});
+
+		$('#forward' + self._id).mouseup(function () {
+			clearInterval(self._incOffsetInterval);
+		}).mousedown(function () {
+			self._incOffsetInterval = setInterval('self._offset++;', 30);
+		});
+
+
+	};// end of setup
 
 	/*
 	timeline.draw()
@@ -381,6 +409,10 @@ function Timeline() {
 	All times are calculated as an offset from NOW before being displayed on the timeline.
 	*/
 	this.draw = function () {
+		// calculate nowX as a function of initialNowX
+		console.log('initialNowX: ' + this._initialNowX + '\noffset: ' + this._offset);
+		this._nowX = this._initialNowX + this._offset;
+
 		// let's find out what time it is.
 		this._nowDate = new Date();
 
@@ -445,17 +477,21 @@ function Timeline() {
 		}
 
 		var fontSize = 14;
+		var padding = 1;
 		// startx
 		drawText(formatDate(this._startDate), this._startX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
 		drawText(formatTime(this._startDate), this._startX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
+		drawText('past', this._startX, this._timelineY - Timeline._DAY_TICKMARK_HALF_LENGTH - padding, this);
 
 		// nowX
 		drawText(formatDate(this._nowDate), this._nowX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
 		drawText(formatTime(this._nowDate), this._nowX, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
+		drawText('now', this._nowX, this._timelineY - Timeline._DAY_TICKMARK_HALF_LENGTH - padding, this);
 
 		// endX
 		var endXtext = this._endX - this._context.measureText(formatDate(this._endDate)).width;
 		drawText(formatDate(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
 		drawText(formatTime(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
+		drawText('future', endXtext, this._timelineY - Timeline._DAY_TICKMARK_HALF_LENGTH - padding, this);
 	};
 }
