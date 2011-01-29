@@ -384,20 +384,24 @@ function Timeline() {
 		// Issue 11: Scroll nowx and recalculate startDate and endDate when back or forward are clicked
 		this._offset = 0;
 		self = this;
-		$('#back' + self._id).mouseup(function () {
-			clearInterval(self._decOffsetInterval);
-		}).mousedown(function () {
-			self._decOffsetInterval = setInterval('self._offset--;', 30);
-		});
-
-		$('#forward' + self._id).mouseup(function () {
+		$('#back' + self._id).mouseout(function () {
+			clearInterval(self._incOffsetInterval);
+		}).mouseup(function () {
 			clearInterval(self._incOffsetInterval);
 		}).mousedown(function () {
 			self._incOffsetInterval = setInterval('self._offset++;', 30);
 		});
 
+		$('#forward' + self._id).mouseout(function () {
+			clearInterval(self._decOffsetInterval);
+		}).mouseup(function () {
+			clearInterval(self._decOffsetInterval);
+		}).mousedown(function () {
+			self._decOffsetInterval = setInterval('self._offset--;', 30);
+		});
 
-	};// end of setup
+
+	};  // end of setup
 
 	/*
 	timeline.draw()
@@ -410,7 +414,6 @@ function Timeline() {
 	*/
 	this.draw = function () {
 		// calculate nowX as a function of initialNowX
-		console.log('initialNowX: ' + this._initialNowX + '\noffset: ' + this._offset);
 		this._nowX = this._initialNowX + this._offset;
 
 		// let's find out what time it is.
