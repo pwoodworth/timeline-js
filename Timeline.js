@@ -41,12 +41,13 @@ function Timeline() {
 	Timeline._HEIGHT_FACTOR = 3 / 5;
 
 	// The following constants are used in the sliderChangedHandler
+	// use integers to aid in calculating latestFullHour
 	Timeline._MS_PER_MINUTE = 60 * 1000;
-	Timeline._MS_PER_HOUR = Timeline._MS_PER_MINUTE * 60.0;
-	Timeline._MS_PER_DAY = Timeline._MS_PER_HOUR * 24.0;
-	Timeline._MS_PER_WEEK = Timeline._MS_PER_DAY * 7.0;
-	Timeline._MS_PER_MONTH = Timeline._MS_PER_WEEK * 4.0;
-	Timeline._MS_PER_YEAR = Timeline._MS_PER_MONTH * 12.0;
+	Timeline._MS_PER_HOUR = Timeline._MS_PER_MINUTE * 60;
+	Timeline._MS_PER_DAY = Timeline._MS_PER_HOUR * 24;
+	Timeline._MS_PER_WEEK = Timeline._MS_PER_DAY * 7;
+	Timeline._MS_PER_MONTH = Timeline._MS_PER_WEEK * 4;
+	Timeline._MS_PER_YEAR = Timeline._MS_PER_MONTH * 12;
 
 	// How long should the length of the now tickmark be?
 	Timeline._NOW_TICKMARK_HALF_LENGTH = 15;
@@ -117,6 +118,8 @@ function Timeline() {
 		$('#zoom_range' + id).text(rangeDescription);
 
 		Timeline._timelines[id]._rangeInMilliseconds = val;
+
+		Timeline._timelines[id]._pixelsPerMs = (Timeline._timelines[id]._endX - Timeline._timelines[id]._startX) / Timeline._timelines[id]._rangeInMilliseconds;
 	};
 
 	Timeline._msToMin = function (ms) {
@@ -151,14 +154,6 @@ function Timeline() {
 	};
 
 	// member functions
-	/* This function is called when the user clicks the back div*/
-	this._backHandler = function () {
-		alert('back clicked');
-	};
-
-	this._forwardHandler = function () {
-		alert('forward clicked');
-	};
 
 	/*
 	timeline.setup()
@@ -343,8 +338,8 @@ function Timeline() {
 			// call resizeHandler to sliderChangedHandler to define rangeMin and minPerPixel
 			Timeline._sliderChangedHandler(self._id);
 
-			// calculate how many minutes are in a pixel
-			self._minutesPerPixel = self._rangeInMinutes / (self._endX - self._startX);
+			
+			
 		};
 
 
@@ -395,7 +390,7 @@ function Timeline() {
 			self._decOffsetInterval = setInterval('self._offset--;', 30);
 		});
 
-
+		
 	};  // end of setup
 
 	/*
@@ -491,5 +486,33 @@ function Timeline() {
 		drawText(formatDate(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH, this);
 		drawText(formatTime(this._endDate), endXtext, this._timelineY + Timeline._DAY_TICKMARK_HALF_LENGTH + fontSize, this);
 		drawText('future', endXtext, this._timelineY - Timeline._DAY_TICKMARK_HALF_LENGTH - padding, this);
+
+		// Todo 9: Add tickmarks for hours, days, etc
+		// begin by calculating the position of the latest full hour
+
+
+		Timeline._timeToX = function (timeline, pixelsPerMs, time) {
+			// calculate how many minutes are in a pixel
+			var x = timeline._nowX + (time - timeline._nowDate.getTime()) * pixelsPerMs;
+			return x;
+		}
+
+		var latestFullHour = Math.floor(this._endDate.getTime() / Timeline._MS_PER_HOUR) * Timeline._MS_PER_HOUR;
+		var latestFullHourX = Timeline._timeToX(this, this._nowX, this._pixelsPerMs, latestFullHour);
+
+		// calculate all hours between end and start
+		Timeline._drawHours = function (timeline, hour) {
+			if (hour <= timeline._startDate.getTime()) {
+				return;
+			}
+
+			Timeline._drawTick(timeline, Timeline._timeToX(timeline, timeline._pixelsPerMs, hour), Timeline._HOUR_TICKMARK_HALF_LENGTH);
+
+			Timeline._drawHours(timeline, hour - Timeline._MS_PER_HOUR);
+		}
+
+		// calculate how many minutes are in a pixel
+
+		Timeline._drawHours(this, latestFullHour);
 	};
 }
