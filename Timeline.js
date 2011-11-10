@@ -41,7 +41,9 @@ function Timeline() {
 	Timeline._BODY_MARGINS = 8;
 	Timeline._SCALE_MARGIN = 5;
 
-	Timeline._HEIGHT_FACTOR = 3 / 5;
+
+	// window.height * this value is used to calculate the canvas height.
+	Timeline._HEIGHT_FACTOR = 3 / 5; 
 
 	// The following constants are used in the sliderChangedHandler
 	// use integers to aid in calculating latestFullHour
@@ -340,9 +342,6 @@ function Timeline() {
 
 			// call resizeHandler to sliderChangedHandler to define rangeMin and minPerPixel
 			Timeline._sliderChangedHandler(self._id);
-
-			
-			
 		};
 
 
@@ -503,19 +502,34 @@ function Timeline() {
 		var latestFullHour = Math.floor(this._endDate.getTime() / Timeline._MS_PER_HOUR) * Timeline._MS_PER_HOUR;
 		var latestFullHourX = Timeline._timeToX(this, this._nowX, this._pixelsPerMs, latestFullHour);
 
+		
 		// calculate all hours between end and start
-		Timeline._drawHours = function (timeline, hour) {
-			if (hour <= timeline._startDate.getTime()) {
+		Timeline._drawHoursRecursive = function (timeline, lastDrawnHour) {
+			if (lastDrawnHour <= timeline._startDate.getTime()) {
 				return;
 			}
 
-			Timeline._drawTick(timeline, Timeline._timeToX(timeline, timeline._pixelsPerMs, hour), Timeline._HOUR_TICKMARK_HALF_LENGTH);
+			Timeline._drawTick(timeline, Timeline._timeToX(timeline, timeline._pixelsPerMs, lastDrawnHour), Timeline._HOUR_TICKMARK_HALF_LENGTH);
 
-			Timeline._drawHours(timeline, hour - Timeline._MS_PER_HOUR);
+			Timeline._drawHoursRecursive(timeline, lastDrawnHour - Timeline._MS_PER_HOUR);
+		}
+		
+		
+		Timeline._drawHoursIterative = function(timeline, latestDrawnHour){
+			var startTime = timeline._startDate.getTime();
+			var times = [];
+
+			for(i = latestDrawnHour; 
+				i >= startTime;
+				i = i - Timeline._MS_PER_HOUR)
+			{
+				times.push(i);
+				Timeline._drawTick(timeline, Timeline._timeToX(timeline, timeline._PIXELS_PER_MS, i), timeline._HOUR_TICKMARK_HALF_LENGTH);
+			}
+			
+			throw new Error("start: " + startTime + " " + times + " ");
 		}
 
-		// calculate how many minutes are in a pixel
-
-		Timeline._drawHours(this, latestFullHour);
+		Timeline._drawHoursRecursive(this, latestFullHour);
 	};
 }
