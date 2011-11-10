@@ -26,8 +26,11 @@ function Timeline() {
 	*/
 
 	// constants
-	Timeline._BORDER_SIDES = 20; // The border on each side of the timeline,
-	// We'll need this value later when calculating back's top offset
+	/*
+		The border on each side of the timeline. We'll need this value later when
+		calculating back's top offset.
+	*/
+	Timeline._BORDER_SIDES = 20; 
 	Timeline._OFFSET_LEFT = '8px';
 	Timeline._OFFSET_TOP = '8px'; // top border, 8px seems to be chrome default
 	Timeline._BUTTON_WIDTH = 17; // The length of the back and forward buttons
