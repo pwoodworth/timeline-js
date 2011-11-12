@@ -303,6 +303,15 @@ Helper = {
 			i -= Constants.ms_per.hour){
 			Helper.drawTick(Helper.conversion.timeToX(i), Constants.half.hour);
 		}
+	},
+	
+	/*
+		Calculates how much space is in between two, including one, hour tickmarks.
+		Requires State.startDate, State.endDate, State.startX, State.endX
+	*/
+	calcHourPixels: function(){
+		var pixels = (State.endX - State.startX) * Constants.ms_per.hour / (State.endDate.getTime() - State.startDate.getTime());		
+		return pixels;
 	}
 };
 
@@ -339,6 +348,7 @@ function Timeline(){
 		$(jq_wrapper_id).append($('<div id="settings_wrapper"><center><a id="showHideSettings" href="javascript:Helper.showSettings();">Settings</a></center></div>'));
 		
 		// Add some settings to the settings panel
+		
 		$("#settings_wrapper").append($('<div id="settings"></div>'));
 		$('#settings').hide();
 		
@@ -475,13 +485,15 @@ function Timeline(){
 		var endT = State.endDate.getTime();
 		var latestFullHour = Math.floor(State.endDate.getTime() / Constants.ms_per.hour) * Constants.ms_per.hour;
 		
-		for(var i = latestFullHour; i>=State.startDate.getTime(); i -= Constants.ms_per.hour){
-			State.context.beginPath();
-			var x = Helper.conversion.timeToX(i);
-			State.context.moveTo(x, State.timelineY - Constants.half.hour);
-			State.context.lineTo(x, State.timelineY + Constants.half.hour);
-			State.context.closePath();
-			State.context.stroke();
+		if(Helper.calcHourPixels() > 10){
+			for(var i = latestFullHour; i>=State.startDate.getTime(); i -= Constants.ms_per.hour){
+				State.context.beginPath();
+				var x = Helper.conversion.timeToX(i);
+				State.context.moveTo(x, State.timelineY - Constants.half.hour);
+				State.context.lineTo(x, State.timelineY + Constants.half.hour);
+				State.context.closePath();
+				State.context.stroke();
+			}
 		}
 	};
 }
