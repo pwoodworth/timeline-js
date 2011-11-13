@@ -70,6 +70,13 @@ Constants = {
 		font: '14px mono sans serif',
 		fontSize: 14,
 		padding: 1
+	},
+	
+	pixels: {
+		hour_min: 10,
+		day_min: 10,
+		week_min: 10,
+		month_min: 10
 	}
 }
 
@@ -305,13 +312,32 @@ Helper = {
 		}
 	},
 	
-	/*
-		Calculates how much space is in between two, including one, hour tickmarks.
-		Requires State.startDate, State.endDate, State.startX, State.endX
-	*/
-	calcHourPixels: function(){
-		var pixels = (State.endX - State.startX) * Constants.ms_per.hour / (State.endDate.getTime() - State.startDate.getTime());		
-		return pixels;
+	distance_between: {
+	
+		/*
+			Calculates how much space is in between two, including one, hour tickmarks.
+			Requires State.startDate, State.endDate, State.startX, State.endX
+		*/
+		hours: function(){
+			var pixels = (State.endX - State.startX) * Constants.ms_per.hour / (State.endDate.getTime() - State.startDate.getTime());		
+			return pixels;
+		},
+	
+		days: function(){
+			var pixels = (State.endX - State.startX) * Constants.ms_per.day / (State.endDate.getTime() - State.startDate.getTime());
+			return pixels;
+		}
+	},
+	
+	is: {
+		// determines whether a given time is 2400 hrs
+		fullDay: function(_time){
+			var date = new Date(_time);
+			if (date.getHours() == 0)
+				return true;
+			else
+				return false;
+		}
 	}
 };
 
@@ -482,15 +508,27 @@ function Timeline(){
 		// label future
 		Helper.drawText('future', endXText, State.timelineY - Constants.half.day - Constants.text.padding);
 		
-		var endT = State.endDate.getTime();
+		// draw hourly tickmarks
 		var latestFullHour = Math.floor(State.endDate.getTime() / Constants.ms_per.hour) * Constants.ms_per.hour;
 		
-		if(Helper.calcHourPixels() > 10){
-			for(var i = latestFullHour; i>=State.startDate.getTime(); i -= Constants.ms_per.hour){
+		var hourPixels = Helper.distance_between.hours();
+		var dayPixels = Helper.distance_between.days();
+		for(var i = latestFullHour; i>=State.startDate.getTime(); i -= Constants.ms_per.hour){
+			// potentially draw hour tickmarks
+			if(hourPixels > Constants.pixels.hour_min){
 				State.context.beginPath();
 				var x = Helper.conversion.timeToX(i);
 				State.context.moveTo(x, State.timelineY - Constants.half.hour);
 				State.context.lineTo(x, State.timelineY + Constants.half.hour);
+				State.context.closePath();
+				State.context.stroke();
+			}
+			// potentially draw day tickmarks
+			if(dayPixels > Constants.pixels.day_min && Helper.is.fullDay(i)){
+				State.context.beginPath();
+				var x = Helper.conversion.timeToX(i);
+				State.context.moveTo(x, State.timelineY - Constants.half.day);
+				State.context.lineTo(x, State.timelineY + Constants.half.day);
 				State.context.closePath();
 				State.context.stroke();
 			}
