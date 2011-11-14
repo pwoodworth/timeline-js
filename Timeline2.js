@@ -37,7 +37,7 @@ Constants = {
 	slider: {
 		min: 0,
 		max: 100,
-		step: 1,
+		step: 0.25,
 		_default: 50,
 		beyond_max: 80
 	},
@@ -264,13 +264,11 @@ Helper = {
 		}
 	},
 	
-	drawTick: function(_x, _halflength){
-	State.context.beginPath();
-	
+	drawTick: function(_x, _half_y){
 		State.context.beginPath();
 		
-		State.context.moveTo(_x, State.timelineY - _halflength);
-		State.context.lineTo(_x, State.timelineY + _halflength);
+		State.context.moveTo(_x, State.timelineY - _half_y);
+		State.context.lineTo(_x, State.timelineY + _half_y);
 		
 		State.context.closePath();
 		State.context.stroke();
@@ -326,6 +324,11 @@ Helper = {
 		days: function(){
 			var pixels = (State.endX - State.startX) * Constants.ms_per.day / (State.endDate.getTime() - State.startDate.getTime());
 			return pixels;
+		},
+		
+		weeks: function(){
+			var pixels = (State.endX - State.startX) * Constants.ms_per.week / (State.endDate.getTime() - State.startDate.getTime());
+			return pixels;
 		}
 	},
 	
@@ -337,6 +340,29 @@ Helper = {
 				return true;
 			else
 				return false;
+		},
+		
+		fullWeek: function(_time){
+			var date = new Date(_time);
+			if(date.getDay() == 0)
+				return true;
+			else
+				return false;
+		}
+		
+	},
+	
+	/* 
+		The latest_full.hour and day functions exploit the fact that 
+		the epoch began at on a full hour, and a full day (Midnight, January 1, 1970)
+	*/
+	latest_full: {
+		hour: function(){
+			Math.floor(State.endDate.getTime() / Constants.ms_per.hour) * Constants.ms_per.hour;
+		}, 
+		
+		day: function(){
+			Math.floor(State.endDate.getTime() / Constants.ms_per.day) * Constants.ms_per.day;
 		}
 	}
 };
@@ -508,30 +534,57 @@ function Timeline(){
 		// label future
 		Helper.drawText('future', endXText, State.timelineY - Constants.half.day - Constants.text.padding);
 		
-		// draw hourly tickmarks
-		var latestFullHour = Math.floor(State.endDate.getTime() / Constants.ms_per.hour) * Constants.ms_per.hour;
+		// DRAW TICKMARKS FOR HOURS, DAYS, AND WEEKS
+		/* 
+			The following code is optimizes for the case where
+			decrementing by hours becomes expensive, despite hours
+			not being shown. 
+			
+			Hours and weeks are not shown on the same line.
+		*/
 		
+		var endT = State.endDate.getTime();
+		var latestFullHour = Math.floor(endT / Constants.ms_per.hour) * Constants.ms_per.hour;
+		var latestFullDay = Math.floor(endT / Constants.ms_per.day) * Constants.ms_per.day;
+
 		var hourPixels = Helper.distance_between.hours();
 		var dayPixels = Helper.distance_between.days();
-		for(var i = latestFullHour; i>=State.startDate.getTime(); i -= Constants.ms_per.hour){
+		var weekPixels = Helper.distance_between.weeks();
+		
+		var showHours = (hourPixels >= Constants.pixels.hour_min);
+		var showDays = (dayPixels >= Constants.pixels.day_min);
+		var showWeeks = (weekPixels >= Constants.pixels.week_min);
+		
+		var latestFullSomething = null;
+		var tickmarkDecrement = null;
+		
+		if(showHours){
+			latestFullSomething = latestFullHour;
+			tickmarkDecrement = Constants.ms_per.hour;
+		}else{
+			latestFullSomething = latestFullDay;
+			tickmarkDecrement = Constants.ms_per.day;
+		}
+		
+		for(var i = latestFullSomething; 
+			i >= State.startDate.getTime(); 
+			i -= tickmarkDecrement){
 			// potentially draw hour tickmarks
-			if(hourPixels > Constants.pixels.hour_min){
-				State.context.beginPath();
-				var x = Helper.conversion.timeToX(i);
-				State.context.moveTo(x, State.timelineY - Constants.half.hour);
-				State.context.lineTo(x, State.timelineY + Constants.half.hour);
-				State.context.closePath();
-				State.context.stroke();
+			var x = Helper.conversion.timeToX(i)
+			if(showHours){
+				Helper.drawTick(x, Constants.half.hour);
 			}
+			
 			// potentially draw day tickmarks
-			if(dayPixels > Constants.pixels.day_min && Helper.is.fullDay(i)){
-				State.context.beginPath();
-				var x = Helper.conversion.timeToX(i);
-				State.context.moveTo(x, State.timelineY - Constants.half.day);
-				State.context.lineTo(x, State.timelineY + Constants.half.day);
-				State.context.closePath();
-				State.context.stroke();
+			if(showDays){
+				Helper.drawTick(x, Constants.half.day);
 			}
+			
+			// potentially draw week tickmarks
+			if(showWeeks && Helper.is.fullWeek(i)){
+				Helper.drawTick(x, Constants.half.week);
+			}
+			
 		}
 	};
 }
