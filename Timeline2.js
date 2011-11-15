@@ -47,7 +47,9 @@ Constants = {
 		minute: 5,
 		hour: 10,
 		day: 15,
-		week: 20
+		week: 20,
+		month: 25,
+		year: 30
 	},
 	
 	settings: {
@@ -73,10 +75,12 @@ Constants = {
 	},
 	
 	pixels: {
+		minute_min: 1,
 		hour_min: 10,
 		day_min: 10,
 		week_min: 10,
-		month_min: 10
+		month_min: 10,
+		year_min: 10
 	}
 }
 
@@ -282,31 +286,15 @@ Helper = {
 		State.context.stroke();
 	},
 	
-	formatDate: function (_date){
-		var str = (_date.getMonth() + 1) + '/' + _date.getDate() + '/' + _date.getFullYear();
-		return str;
-	},
-	
-	formatTime: function(_date){
-		var str = _date.getHours() + ':' + (_date.getMinutes() > 9 ? _date.getMinutes() : '0' + _date.getMinutes());
-		return str;
-	},
-	
-	drawHoursRecursive: function(_latestDrawnHour){
-		if(_latestDrawnHour <= State.startDate.getTime()){
-			return;
-		}
+	format:{
+		date: function (_date){
+			var str = (_date.getMonth() + 1) + '/' + _date.getDate() + '/' + _date.getFullYear();
+			return str;
+		},
 		
-		Helper.drawTick(Helper.conversion.timeToX(_latestDrawnHour), Constants.half.hour);
-		
-		Helper.drawHoursRecursive(_latestDrawnHour - Constants.ms_per.hour);
-	},
-	
-	drawHoursIterative: function(_latestFullHour){
-		for(i = _latestFullHour;
-			i >= State.startDate.getTime();
-			i -= Constants.ms_per.hour){
-			Helper.drawTick(Helper.conversion.timeToX(i), Constants.half.hour);
+		time: function(_date){
+			var str = _date.getHours() + ':' + (_date.getMinutes() > 9 ? _date.getMinutes() : '0' + _date.getMinutes());
+			return str;
 		}
 	},
 	
@@ -316,6 +304,11 @@ Helper = {
 			Calculates how much space is in between two, including one, hour tickmarks.
 			Requires State.startDate, State.endDate, State.startX, State.endX
 		*/
+		minutes: function(){
+			var pixels = (State.endX - State.startX * Constants.ms_per.minute) / (State.endDate.getTime() - State.startDate.getTime());
+			return pixels;
+		},
+		
 		hours: function(){
 			var pixels = (State.endX - State.startX) * Constants.ms_per.hour / (State.endDate.getTime() - State.startDate.getTime());		
 			return pixels;
@@ -329,25 +322,40 @@ Helper = {
 		weeks: function(){
 			var pixels = (State.endX - State.startX) * Constants.ms_per.week / (State.endDate.getTime() - State.startDate.getTime());
 			return pixels;
+		},
+		
+		months: function(){
+			var pixels = (State.endX - State.startX) * Constants.ms_per.month / (State.endDate.getTime() - State.startDate.getTime());
+			return pixels;
+		},
+		
+		years: function(){
+			var pixels = (State.end_X - State.startX) * Constants.ms_per_month / (State.endDate.getTime() - State.startDate.getTime());
+			return pixels;
 		}
 	},
 	
-	is: {
+	isFull: {
 		// determines whether a given time is 2400 hrs
-		fullDay: function(_time){
+		day: function(_time){
 			var date = new Date(_time);
-			if (date.getHours() == 0)
-				return true;
-			else
-				return false;
+			return date.getHours() == 0;
 		},
 		
-		fullWeek: function(_time){
+		week: function(_time){
 			var date = new Date(_time);
-			if(date.getDay() == 0)
-				return true;
-			else
-				return false;
+			return date.getDay() == 0;
+		},
+		
+		month: function(_time){
+			var date = new Date(_time);
+			return date.getDate() == 0;
+		},
+		
+		year: function(_time){
+			// assumes _time to be the beginning of a day
+			var date = new Date(_time);
+			return date.getDate() == 0 && date.getMonth() == 0;
 		}
 		
 	},
@@ -506,9 +514,9 @@ function Timeline(){
 		
 		// label start ...
 		// ... date
-		Helper.drawText(Helper.formatDate(State.startDate), State.startX, State.timelineY, Constants.half.day);
+		Helper.drawText(Helper.format.date(State.startDate), State.startX, State.timelineY, Constants.half.day);
 		// ... time
-		Helper.drawText(Helper.formatTime(State.startDate), State.startX, State.timelineY + Constants.half.day + Constants.text.fontSize);
+		Helper.drawText(Helper.format.time(State.startDate), State.startX, State.timelineY + Constants.half.day + Constants.text.fontSize);
 		
 		// label past
 		Helper.drawText('past', State.startX, State.timelineY - Constants.half.day - Constants.text.padding);
@@ -516,20 +524,20 @@ function Timeline(){
 		
 		// label now ...
 		// ... date
-		Helper.drawText(Helper.formatDate(State.nowDate), State.nowX, State.timelineY, Constants.half.day);
+		Helper.drawText(Helper.format.date(State.nowDate), State.nowX, State.timelineY, Constants.half.day);
 		// ... time
-		Helper.drawText(Helper.formatTime(State.nowDate), State.nowX, State.timelineY + Constants.half.day + Constants.text.fontSize);
+		Helper.drawText(Helper.format.time(State.nowDate), State.nowX, State.timelineY + Constants.half.day + Constants.text.fontSize);
 		
 		// label now
 		Helper.drawText('now', State.nowX, State.timelineY - Constants.half.day - Constants.text.padding);
 		
 		
 		// label future ...
-		var endXText = State.endX - State.context.measureText(Helper.formatDate(State.endDate)).width;
+		var endXText = State.endX - State.context.measureText(Helper.format.date(State.endDate)).width;
 		// ... date
-		Helper.drawText(Helper.formatDate(State.endDate), endXText, State.timelineY + Constants.half.day);
+		Helper.drawText(Helper.format.date(State.endDate), endXText, State.timelineY + Constants.half.day);
 		// ... time
-		Helper.drawText(Helper.formatTime(State.endDate), endXText, State.timelineY + Constants.half.day + Constants.text.fontSize);
+		Helper.drawText(Helper.format.time(State.endDate), endXText, State.timelineY + Constants.half.day + Constants.text.fontSize);
 		
 		// label future
 		Helper.drawText('future', endXText, State.timelineY - Constants.half.day - Constants.text.padding);
@@ -547,13 +555,20 @@ function Timeline(){
 		var latestFullHour = Math.floor(endT / Constants.ms_per.hour) * Constants.ms_per.hour;
 		var latestFullDay = Math.floor(endT / Constants.ms_per.day) * Constants.ms_per.day;
 
+		
 		var hourPixels = Helper.distance_between.hours();
+		var minutePixels = hourPixels / 60;
 		var dayPixels = Helper.distance_between.days();
 		var weekPixels = Helper.distance_between.weeks();
+		var monthPixels = Helper.distance_between.months();
+		var yearPixels = Helper.distance_between.years();
 		
+		var showMinutes =  (minutePixels >= Constants.pixels.hour_min);
 		var showHours = (hourPixels >= Constants.pixels.hour_min);
 		var showDays = (dayPixels >= Constants.pixels.day_min);
 		var showWeeks = (weekPixels >= Constants.pixels.week_min);
+		var showMonths = (monthPixels >= Constants.pixels.month_min);
+		var showYears = (yearPixels >= Constants.pixels.year_min);
 		
 		var latestFullSomething = null;
 		var tickmarkDecrement = null;
@@ -564,6 +579,15 @@ function Timeline(){
 		}else{
 			latestFullSomething = latestFullDay;
 			tickmarkDecrement = Constants.ms_per.day;
+		}
+		
+		if(showMinutes){
+			var x = 0;
+			var latestFullMinute = Math.floor(endT / Constants.ms_per.minute) * Constants.ms_per.minute;
+			for(var i = latestFullMinute; i > State.startDate.getTime(); i -= Constants.ms_per.minute){
+				x = Helper.conversion.timeToX(i);
+				Helper.drawTick(x, Constants.half.minute);
+			}
 		}
 		
 		for(var i = latestFullSomething; 
@@ -581,11 +605,27 @@ function Timeline(){
 			}
 			
 			// potentially draw week tickmarks
-			if(showWeeks && Helper.is.fullWeek(i)){
+			if(showWeeks && Helper.isFull.week(i)){
 				Helper.drawTick(x, Constants.half.week);
 			}
 			
+			if(showMonths && Helper.isFull.month(i)){
+				Helper.drawTick(x, Constants.half.month);
+			}
+			
+			if(showYears && Helper.isFull.year(i)){
+				Helper.drawTick(x, Constants.half.year);
+			}
 		}
+		
+		// draw 60 pixels for future reference
+		/*
+		State.context.beginPath();
+		State.context.moveTo(0, 0);
+		State.context.lineTo(Elements.canvas.width, Elements.canvas.height);
+		State.context.closePath();
+		State.context.stroke();
+		*/
 	};
 }
 
