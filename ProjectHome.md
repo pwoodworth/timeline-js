@@ -1,0 +1,1 @@
+Displays your Google Calendar Events in a for some people intuitive timeline.
